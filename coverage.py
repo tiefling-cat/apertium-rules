@@ -2,7 +2,7 @@
 
 import re, sys
 import xml.etree.ElementTree as ET
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 
 ifname = 'apertium-en-es.en-es.t1x'
 any_tag_re = '<[a-z0-9-]+>'
@@ -162,7 +162,9 @@ def calculate_coverage_r(pattern_FST, line, state):
     to words, state is a state of our makeshift FST represented
     by its level.
     """
+    # the end of the line
     if not line:
+        # check if it's also the end of pattern
         if state[1] is not None:
             return [[('r',) + state[1]]]
         return []
@@ -170,12 +172,25 @@ def calculate_coverage_r(pattern_FST, line, state):
     coverage_list = []
     current_item = line[0]
 
+    # continue the pattern for each category assigned to current word
     for cat in (current_item[1] & set(state[0].keys())):
-        pattern_list = [[('w', current_item[0], cat)] + pattern_tail for pattern_tail in calculate_coverage_r(pattern_FST, line[1:], state[0][cat])]
+        pattern_list = [[('w', current_item[0], cat)] + pattern_tail 
+                            for pattern_tail 
+                                in calculate_coverage_r(
+                                        pattern_FST,
+                                        line[1:],
+                                        state[0][cat])]
         coverage_list.extend(pattern_list)
 
+    # check if it can be an end of the pattern
     if state[1] is not None:
-        pattern_list = [[('r',) + state[1]] + pattern_tail for pattern_tail in calculate_coverage_r(pattern_FST, line, pattern_FST)]
+        # if so, also try to start new pattern from here
+        pattern_list = [[('r',) + state[1]] + pattern_tail 
+                            for pattern_tail 
+                                in calculate_coverage_r(
+                                        pattern_FST, 
+                                        line, 
+                                        pattern_FST)]
         coverage_list.extend(pattern_list)
     return coverage_list
 
@@ -191,7 +206,7 @@ def parse_coverage(coverage):
     """
     Get a list representing one coverage
     (as output by calculate_coverage_r) and return
-    a list where elements are (list_of_words, rule).
+    a list where elements are groups (list_of_words, rule).
     """
     groups = []
     current_group = []
@@ -203,22 +218,33 @@ def parse_coverage(coverage):
             current_group = []
     return groups
 
-def print_all_coverages(coverage_list):
+def output_all_coverages(coverage_list, output_stream):
     for coverage in coverage_list:
-        print_groups(coverage)
-    print()
+        output_groups(coverage, output_stream)
+    output_stream.write('\n')
 
-def print_groups(coverage):
+def output_groups(coverage, output_stream):
+    """
+    Output coverage with groups.
+    """
     output_str = '' 
     for group in coverage:
         output_str = output_str + \
             ' ({} {})'.format(group[1][0], ' '.join(group[0]))
-    print(output_str.strip())
+    output_stream.write(output_str.strip() + '\n')
 
 def signature(coverage):
+    """
+    Get coverage signature which is just a tuple
+    of lengths of groups comprising the coverage.
+    """
     return tuple([len(group[0]) for group in coverage])
 
 def get_LRLM(coverage_list):
+    """
+    Get only LRLM coverages from list of all coverages
+    by sorting them lexicographycally by their signatures.
+    """
     sorted_list = sorted(coverage_list, key=signature)
     signature_max = signature(sorted_list[0])
     LRLM_list = []
@@ -229,33 +255,59 @@ def get_LRLM(coverage_list):
             return LRLM_list
     return LRLM_list
 
-def process_line(line, cat_dict, pattern_FST):
+def process_line(line, cat_dict, pattern_FST, output_stream, out_all, out_lrlm):
     """
     Get line in stream format and print all coverages and LRLM only.
     """
-    print(line + '\n')
+    output_stream.write(line + '\n')
     line = get_cats_by_line(line, cat_dict)
     coverage_list = calculate_coverage_r(pattern_FST, line, pattern_FST)
-    print('All coverages:')
-    print_all_coverages(parse_coverage_list(coverage_list))
-    print('LRLM only:')
-    print_all_coverages(parse_coverage_list(get_LRLM(coverage_list)))
+    if out_all:
+        output_stream.write('All coverages:\n')
+        output_all_coverages(parse_coverage_list(coverage_list), output_stream)
+    if out_lrlm:
+        output_stream.write('LRLM only:\n')
+        output_all_coverages(parse_coverage_list(get_LRLM(coverage_list)), output_stream)
 
 def get_options():
     """
     Parse commandline arguments
     """
-    usage = "USAGE: ./%prog [-o FILE] t*x_FILE [INPUT_FILE]"
+    usage = "USAGE: ./%prog [options] t*x_FILE [INPUT_FILE]"
     op = OptionParser(usage=usage)
 
     op.add_option("-o", "--out", dest="ofname",
                   help="output results to FILE", metavar="FILE")
 
+    mode_group = OptionGroup(op, "Output mode:",
+                    "Specify what coverages are output, all or LRLM.  "
+                    "If none specified, both variants are output.")
+
+    mode_group.add_option("-a", "--all", dest="all", action="store_true",
+                  help="output all coverages")
+
+    mode_group.add_option("-l", "--lrlm", dest="lrlm", action="store_true",
+                  help="output LRLM coverages")
+
+    op.add_option_group(mode_group)
+
     (opts, args) = op.parse_args()
-    if len(args) > 3:
-        op.error("Too many arguments.")
+    print(opts)
+
+    if len(args) == 0:
+        op.error("specify t*x file containing rules.")
         op.print_help()
         sys.exit(1)
+
+    if len(args) > 2:
+        op.error("too many arguments.")
+        op.print_help()
+        sys.exit(1)
+
+    if opts.all is None and opts.lrlm is None:
+        opts.all = True
+        opts.lrlm = True
+        print(opts)
 
     return opts, args
 
@@ -263,35 +315,24 @@ if __name__ == "__main__":
     opts, args = get_options()
 
     txfname = args[0]
-
     transtree = ET.parse(txfname)
     cat_dict = get_cat_dict(transtree)
-
     pattern_FST = get_pattern_FST(transtree)
     output_patterns(pattern_FST)
 
-    # use stdin if it's full                                                        
-    if not sys.stdin.isatty():
+    if len(args) == 1:
         input_stream = sys.stdin
-    # otherwise, read the given filename                                            
+    elif len(args) == 2:
+        input_filename = args[1]
+        input_stream = open(input_filename, 'r', encoding='utf-8')
+
+    if opts.ofname:
+        output_stream = open(opts.ofname, 'w', encoding='utf-8')            
     else:
-        try:
-            input_filename = args[1]
-        except IndexError:
-            message = 'need filename as first argument if stdin is not full'
-            raise IndexError(message)
-        else:
-            input_stream = open(input_filename, 'rU')
+        output_stream = sys.stdout
 
     for line in input_stream:
-        process_line(line, cat_dict, pattern_FST)
+        process_line(line, cat_dict, pattern_FST, output_stream, opts.all, opts.lrlm)
 
-    #    print line # do something useful with each line
-
-    #txfname = args[0]
-    #ifname = args[1]
-
-    #with open(ifname, 'r') as ifile:
-    #    lines = ifile.readlines()
-
-    #for line in lines:
+    if opts.ofname:
+        output_stream.close()
