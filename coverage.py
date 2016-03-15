@@ -279,7 +279,7 @@ def get_options():
     op.add_option("-o", "--out", dest="ofname",
                   help="output results to FILE", metavar="FILE")
 
-    mode_group = OptionGroup(op, "Output mode:",
+    mode_group = OptionGroup(op, "output mode",
                     "Specify what coverages are output, all or LRLM.  "
                     "If none specified, both variants are output.")
 

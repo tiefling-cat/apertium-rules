@@ -19,7 +19,7 @@ Options:
   -h, --help           show this help message and exit
   -o FILE, --out=FILE  output results to FILE
 
-  Output mode::
+  output mode:
     Specify what coverages are output, all or LRLM.  If none specified,
     both variants are output.
 
