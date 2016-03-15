@@ -4,25 +4,10 @@ import re, sys
 import xml.etree.ElementTree as ET
 from optparse import OptionParser, OptionGroup
 
-ifname = 'apertium-en-es.en-es.t1x'
 any_tag_re = '<[a-z0-9-]+>'
 any_num_of_any_tags_re = '({})*'.format(any_tag_re)
 any_num_of_any_tags_line_re = '^{}$'.format(any_num_of_any_tags_re)
 default_cat = ['default']
-
-example_lines = [
-    '^I/I<num><mf><sg>/prpers<prn><subj><p1><mf><sg>$ '
-    '^have/have<vbhaver><inf>/have<vbhaver><pres>/have<vblex><inf>/have<vblex><pres>$ '
-    '^a/a<det><ind><sg>$ ^cat/cat<n><sg>$ ^and/and<cnjcoo>$ '
-    '^a/a<det><ind><sg>$ ^rat/rat<n><sg>$',
-    '^I/I<num><mf><sg>/prpers<prn><subj><p1><mf><sg>$ '
-    '^think that/think<vblex><inf># that/think<vblex><pres># that$ '
-    '^he/prpers<prn><subj><p3><m><sg>$ ^might/might<vaux><inf>$ '
-    '^have/have<vbhaver><inf>/have<vbhaver><pres>/have<vblex><inf>/have<vblex><pres>$ '
-    '^finished/finish<vblex><past>/finish<vblex><pp>$ '
-    '^it/prpers<prn><subj><p3><nt><sg>/prpers<prn><obj><p3><nt><sg>$ '
-    '^yesterday/yesterday<adv>$'
-    ]
 
 def tag_pattern_to_re(tag_pattern):
     """
