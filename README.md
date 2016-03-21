@@ -18,13 +18,10 @@ The script reads lines from the input file if specified, otherwise it reads from
 * The script only accounts for multiwords where invariable part goes last.
 * The script doesh't handle superblanks.
 
-### Tests
-So far I've tested it with English, namely apertium-en-es.en-es.t1x from apertium-en-es with lines preprocessed by lt-proc with en-es.automorf.bin.
-
 ### Output
 For each line in input file, the script outputs the line as is and the obtained coverages in following format:
 
-(96 I) (121 think that) (96 he) (199 might have finished it) (219 yesterday)
+  (96 I) (121 think that) (96 he) (199 might have finished it) (219 yesterday)
 
 The numbers are given to the rules in order they appear in the rules file.
 
@@ -47,15 +44,18 @@ Options:
     -l, --lrlm          output LRLM coverages
 ```
 
+### Tests
+So far I've tested it with English, namely apertium-en-es.en-es.t1x from apertium-en-es with lines preprocessed by lt-proc with en-es.automorf.bin.
+
 ### Examples
     $ ./coverage.py -a -r PATH_TO_t*x_FILE test.txt
 
-will output all coverages by rules from PATH_TO_t*x_FILE for each line in in test.txt
+will output all coverages by rules from PATH_TO_t*x_FILE for each line in test.txt.
 
-    $ ./coverage.py -o result.txt PATH_TO_t*x_FILE test.txt
+    $ ./coverage.py -o result.txt -r PATH_TO_t*x_FILE test.txt
 
-will output all coverages by rules from PATH_TO_t*x_FILE, then only LRLM coverages for each line in Apertium stream format in test.txt to result.txt
+will output all coverages by rules from PATH_TO_t*x_FILE, then only LRLM coverages for each line in test.txt to result.txt.
 
-    $ echo 'I think that he might have finished it yesterday' | lt-proc PATH_TO_automorph.bin_FILE | ./coverage.py -l PATH_TO_t*x_FILE
+    $ echo 'I think that he might have finished it yesterday' | lt-proc PATH_TO_automorph.bin_FILE | ./coverage.py -l -r PATH_TO_t*x_FILE
 
 will output only LRLM coverages by rules from PATH_TO_t*x_FILE for the line 'I think that he might have finished it yesterday' to standard output.
