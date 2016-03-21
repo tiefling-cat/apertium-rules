@@ -21,7 +21,7 @@ The script reads lines from the input file if specified, otherwise it reads from
 ### Output
 For each line in input file, the script outputs the line as is and the obtained coverages in following format:
 
-  (96 I) (121 think that) (96 he) (199 might have finished it) (219 yesterday)
+    (96 I) (121 think that) (96 he) (199 might have finished it) (219 yesterday)
 
 The numbers are given to the rules in order they appear in the rules file.
 
@@ -50,11 +50,11 @@ So far I've tested it with English, namely apertium-en-es.en-es.t1x from apertiu
 ### Examples
     $ ./coverage.py -a -r PATH_TO_t*x_FILE test.txt
 
-will output all coverages by rules from PATH_TO_t*x_FILE for each line in test.txt.
+will output all coverages by rules from PATH_TO_t*x_FILE for each line in test.txt to standard output.
 
     $ ./coverage.py -o result.txt -r PATH_TO_t*x_FILE test.txt
 
-will output all coverages by rules from PATH_TO_t*x_FILE, then only LRLM coverages for each line in test.txt to result.txt.
+will output all coverages by rules from PATH_TO_t*x_FILE, then only LRLM coverages, for each line in test.txt to result.txt.
 
     $ echo 'I think that he might have finished it yesterday' | lt-proc PATH_TO_automorph.bin_FILE | ./coverage.py -l -r PATH_TO_t*x_FILE
 
