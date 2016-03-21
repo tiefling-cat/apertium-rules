@@ -1,0 +1,2 @@
+^prpers<prn><subj><p1><mf><sg>$ ^have<vbhaver><pres>$ ^a<det><ind><sg>$ ^cat<n><sg>$ ^and<cnjcoo>$ ^a<det><ind><sg>$ ^rat<n><sg>$
+^prpers<prn><subj><p1><mf><sg>$ ^think<vblex><pres># that$ ^prpers<prn><subj><p3><m><sg>$ ^might<vaux><inf>$ ^have<vbhaver><pres>$ ^finish<vblex><past>$ ^prpers<prn><obj><p3><nt><sg>$ ^yesterday<adv>$

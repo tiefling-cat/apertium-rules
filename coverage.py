@@ -56,7 +56,7 @@ def get_cats_by_line(line, cat_dict):
     """
     Return all possible categories for ALU.
     """
-    return [(ALU.split('/', 1)[0].lstrip('^'), get_cats_by_ALU(ALU, cat_dict)) 
+    return [get_cats_by_ALU(ALU, cat_dict)
                 for ALU in re.findall(r'\^.*?\$', line)]
 
 def get_cats_by_ALU(ALU, cat_dict):
@@ -64,9 +64,15 @@ def get_cats_by_ALU(ALU, cat_dict):
     Return set of all possible categories for ALU.
     """
     divided = ALU.lstrip('^').rstrip('$').split('/')
-    lemma = divided[0]
-    LU_list = divided[1:]
-    return set(sum([get_cats_by_LU(LU, cat_dict, lemma) for LU in LU_list], []))
+    if len(divided) > 1:
+        lemma = divided[0]
+        LU_list = divided[1:]
+        return (lemma, set(sum([get_cats_by_LU(LU, cat_dict, lemma) 
+                                    for LU in LU_list], [])))
+    if len(divided) == 1:
+        lemma = divided[0].split('<', 1)[0]
+        return (lemma, set(get_cats_by_LU(divided[0], cat_dict, lemma)))
+    return ('default', set(default_cat))
 
 def get_cats_by_LU(LU, cat_dict, lemma):
     """
@@ -258,15 +264,18 @@ def get_options():
     """
     Parse commandline arguments
     """
-    usage = "USAGE: ./%prog [options] t*x_FILE [INPUT_FILE]"
+    usage = "USAGE: ./%prog [-a|-l] [-o OUTPUT_FILE] -r RULES_FILE [INPUT_FILE]"
     op = OptionParser(usage=usage)
 
     op.add_option("-o", "--out", dest="ofname",
-                  help="output results to FILE", metavar="FILE")
+                  help="output results to OUTPUT_FILE.", metavar="OUTPUT_FILE")
+
+    op.add_option("-r", "--rules", dest="rfname",
+                  help="use RULES_FILE t*x file for calculating coverages.", metavar="RULES_FILE")
 
     mode_group = OptionGroup(op, "output mode",
-                    "Specify what coverages are output, all or LRLM.  "
-                    "If none specified, both variants are output.")
+                    "Specify what coverages to output, all or LRLM.  "
+                    "If none specified, outputs both variants.")
 
     mode_group.add_option("-a", "--all", dest="all", action="store_true",
                   help="output all coverages")
@@ -277,14 +286,13 @@ def get_options():
     op.add_option_group(mode_group)
 
     (opts, args) = op.parse_args()
-    print(opts)
 
-    if len(args) == 0:
-        op.error("specify t*x file containing rules.")
+    if opts.rfname is None:
+        op.error("specify t*x file containing rules with -r (--rules) option.")
         op.print_help()
         sys.exit(1)
 
-    if len(args) > 2:
+    if len(args) > 1:
         op.error("too many arguments.")
         op.print_help()
         sys.exit(1)
@@ -292,24 +300,36 @@ def get_options():
     if opts.all is None and opts.lrlm is None:
         opts.all = True
         opts.lrlm = True
-        print(opts)
 
     return opts, args
 
 if __name__ == "__main__":
     opts, args = get_options()
 
-    txfname = args[0]
-    transtree = ET.parse(txfname)
+    try:
+        transtree = ET.parse(opts.rfname)
+    except FileNotFoundError:
+        print('Failed to locate rules file \'{}\'. '
+              'Have you misspelled the name?'.format(opts.rfname))
+        sys.exit(1)
+    except ET.ParseError:
+        print('Error parsing rules file \'{}\'. '
+              'Is there something wrong with it?'.format(opts.rfname))
+        sys.exit(1)
+
     cat_dict = get_cat_dict(transtree)
     pattern_FST = get_pattern_FST(transtree)
     output_patterns(pattern_FST)
 
-    if len(args) == 1:
+    if len(args) == 0:
         input_stream = sys.stdin
-    elif len(args) == 2:
-        input_filename = args[1]
-        input_stream = open(input_filename, 'r', encoding='utf-8')
+    elif len(args) == 1:
+        try:
+            input_stream = open(args[0], 'r', encoding='utf-8')
+        except FileNotFoundError:
+            print('Failed to locate input file \'{}\'. '
+                  'Have you misspelled the name?'.format(args[0]))
+            sys.exit(1)
 
     if opts.ofname:
         output_stream = open(opts.ofname, 'w', encoding='utf-8')            
