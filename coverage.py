@@ -4,7 +4,7 @@ import re, sys
 import xml.etree.ElementTree as ET
 from optparse import OptionParser, OptionGroup
 
-any_tag_re = '<[a-z0-9-]+?>'
+any_tag_re = '<[a-z0-9-]+?>' 
 any_num_of_any_tags_re = '({})*'.format(any_tag_re)
 any_num_of_any_tags_line_re = '^{}$'.format(any_num_of_any_tags_re)
 default_cat = ['default']
